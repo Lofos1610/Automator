@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const BASE_URL = 'https://script.google.com/macros/s/AKfycbxWhSyOF-d0Gk4w9THi2ksouxmyF93lzokl3PYPkEF9SSVJwOb7JMkUzgamgw4vhIpf/exec';
+  const BASE_URL = 'https://script.google.com/macros/s/AKfycbxwQvH_Eev-0NwD8Zv58BKtok31UvBguApH_mxDr0n0ryfRVVNj7AYx6cwh7XVHvibL/exec';
   const GEMINI_API_KEY = "AIzaSyDCofB7HU-vllo7b5kx6RRwo0lp5jAMdfo";
   const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -127,7 +127,7 @@
   document.getElementById("thankYouBtn").onclick = () => {
     const editor = document.querySelector('.nicEdit-main');
     if (editor) {
-      editor.innerHTML += '<br>神戸美容室/神戸ヘアサロン/摂津本山美容室/摂津本山ヘアサロン/髪質改善サロン/ioLu/Aujua/モードケイズ/髪質改善/ヘアセット/ブリーチ/インナーカラー/エクステ/ダブルカラー/前髪カット/カラー/韓国/トリートメント/縮毛矯正/前髪/ハイライト/ヘッドスパ/イルミナカラー/ボブ/学割/イヤリングカラー/カット/ヘアメイクカット/パーマ';
+      editor.innerHTML += '<br>白髪染め　白髪ぼかし　脱白髪染め　ハイライト　ショートカット　縮毛矯正　髪質改善';
       alert('固定タグを追加しました。');
     } else {
       alert('エディタが見つかりませんでした');
