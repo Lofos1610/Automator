@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const BASE_URL = 'https://script.google.com/macros/s/AKfycbz6v0D4wr9T3eEqpbZSK0yMZC2bPcnkLUkNfyDaaef-Xac7e5bwy2yAGJ1MdQbylAT5/exec';
+  const BASE_URL = 'https://script.google.com/macros/s/AKfycbxWhSyOF-d0Gk4w9THi2ksouxmyF93lzokl3PYPkEF9SSVJwOb7JMkUzgamgw4vhIpf/exec';
   const GEMINI_API_KEY = "AIzaSyDCofB7HU-vllo7b5kx6RRwo0lp5jAMdfo";
   const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
