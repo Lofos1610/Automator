@@ -56,7 +56,7 @@
       action: 'add_candidate',
       title: document.querySelector('input[name="title"]')?.value || '',
       content: document.querySelector('.nicEdit-main')?.innerHTML || '',
-      stylistId: document.querySelector('#staffId')?.value || '',
+      staffId: document.querySelector('#staffId')?.value || '',
       category: document.querySelector('#blogCategoryCd')?.value || '',
       images: document.querySelector('img.img-resize219')?.src || '',
       couponId: document.querySelector('input[name="couponId"]')?.value || ''
