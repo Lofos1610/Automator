@@ -1,0 +1,252 @@
+(function () {
+  'use strict';
+
+  const BASE_URL = 'https://script.google.com/macros/s/AKfycbwmtSmgg54BDIkJQgt_IGjTVJMzn6jY3ziypMc3n78DP235QCqDtK9kJ20rb6HsOeDn/exec';
+  const GEMINI_API_KEY = "AIzaSyDCofB7HU-vllo7b5kx6RRwo0lp5jAMdfo";
+  const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+  let candidateData = [];
+  let confirmedData = [];
+
+  const container = document.createElement("div");
+  container.style = "width: 100%; padding: 10px; background: #f4f4f4; border-bottom: 1px solid #ccc;";
+  document.querySelector('.path')?.before(container);
+
+   container.innerHTML = `
+    <div id="blogToolBar" style="display: flex; flex-wrap: wrap; gap: 10px;">
+      <button id="addCandidate">📝 候補に登録</button>
+      <button id="confirmSelected">✅ 一括確定</button>
+      <button id="deleteSelected">🗑️ 選択削除</button>
+      <button id="thankYouBtn">固定タグ追加</button>
+      <button id="aiBlogBtn">🤖 AIでブログを書く(β版)</button>
+    </div>
+    <div id="aiSection" style="margin-top: 10px;">
+      <textarea id="aiPromptInput" placeholder="どんな記事を書きたいですか？（例：梅雨の髪質改善ケア）"
+        style="display:none;width:100%;height:80px;margin-top:5px;"></textarea>
+      <button id="aiExecBtn" style="display:none; margin-top: 5px;">この内容で書く</button>
+    </div>
+    <div id="candidateList"><h3>候補一覧</h3></div>
+    <div id="confirmedList"><h3>確定済み一覧</h3></div>
+  `;
+
+
+  function showLoading(msg = "処理中...") {
+    let loading = document.getElementById("blog-loading");
+    if (!loading) {
+      loading = document.createElement("div");
+      loading.id = "blog-loading";
+      loading.style.cssText = "position:fixed;top:20px;right:20px;background:#000;color:#fff;padding:10px;z-index:9999;border-radius:5px;font-size:14px;";
+      document.body.appendChild(loading);
+    }
+    loading.textContent = msg;
+  }
+
+  function hideLoading() {
+    const loading = document.getElementById("blog-loading");
+    if (loading) loading.remove();
+  }
+
+  function renderLoadingList(elementId, label = "読み込み中...") {
+    const root = document.getElementById(elementId);
+    root.innerHTML = `<h3>${label}</h3><div>🔄 ${label}</div>`;
+  }
+
+  function getFormData() {
+    return {
+      action: 'add_candidate',
+      title: document.querySelector('input[name="title"]')?.value || '',
+      content: document.querySelector('.nicEdit-main')?.innerHTML || '',
+      stylistId: document.querySelector('#staffId')?.value || '',
+      category: document.querySelector('#blogCategoryCd')?.value || '',
+      images: document.querySelector('img.img-resize219')?.src || '',
+      couponId: document.querySelector('input[name="couponId"]')?.value || ''
+    };
+  }
+
+  function renderList(list, elementId, isCandidate) {
+    const root = document.getElementById(elementId);
+    const items = list.map((item, i) => `
+      <div style="border: 1px solid #ccc; padding: 5px;">
+        <input type="checkbox" data-index="${item.index}">
+        <strong>${item.title}</strong><br>
+        <img src="${item.image}" width="100"><br>
+        ${isCandidate ? `
+          <button data-move="up" data-i="${i}">←</button>
+          <button data-move="down" data-i="${i}">→</button>
+        ` : ''}
+      </div>
+    `).join('');
+    root.innerHTML = `<h3>${isCandidate ? '候補一覧' : '確定済み一覧'}</h3><div style="display: flex; gap: 10px; flex-wrap: wrap;">${items}</div>`;
+
+    if (isCandidate) {
+      root.querySelectorAll('button[data-move]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = parseInt(btn.dataset.i);
+          const dir = btn.dataset.move;
+          if (dir === 'up' && i > 0) {
+            [candidateData[i], candidateData[i - 1]] = [candidateData[i - 1], candidateData[i]];
+          } else if (dir === 'down' && i < candidateData.length - 1) {
+            [candidateData[i], candidateData[i + 1]] = [candidateData[i + 1], candidateData[i]];
+          }
+          updateOrder();
+        });
+      });
+    }
+  }
+
+  function updateOrder() {
+    const indexList = candidateData.map(c => c.index);
+    showLoading("順番を保存中...");
+    fetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action: 'reorder',
+        indexList: JSON.stringify(indexList)
+      })
+    }).then(() => {
+      hideLoading();
+      loadData();
+    });
+  }
+
+  function loadData() {
+    renderLoadingList("candidateList", "候補一覧を読み込み中...");
+    renderLoadingList("confirmedList", "確定済み一覧を読み込み中...");
+    fetch(BASE_URL + '?action=get')
+      .then(res => res.json())
+      .then(data => {
+        candidateData = data.candidates || [];
+        confirmedData = data.confirmed || [];
+        renderList(candidateData, "candidateList", true);
+        renderList(confirmedData, "confirmedList", false);
+      });
+  }
+
+  // 固定タグ追加
+  document.getElementById("thankYouBtn").onclick = () => {
+    const editor = document.querySelector('.nicEdit-main');
+    if (editor) {
+      editor.innerHTML += '<br>----------------------------------------------------<br>/西宮マツエク/甲子園マツエク/神戸/兵庫/芦屋/尼崎/三ノ宮/大阪/甲子園球場/カリナ/マツエク/カラーマツエク/ブラウンマツエク/フラット/バインドロック/マツエク付け放題/パリジェンヌ/まつげパーマ/韓国まつげ/マツパ/束感/束間/ワンホン/眉毛サロン/ハリウッドブロウリフト/眉毛/眉毛wax/眉毛パーマ/ラッシュアディクト/v3ファンデーション /スタッフ5人以上/5000円以下/女性サロン/学割<br>---------------------------------------------------';
+      alert('固定タグを追加しました。');
+    } else {
+      alert('エディタが見つかりませんでした');
+    }
+  };
+
+
+// UI表示切替
+document.getElementById("aiBlogBtn").onclick = () => {
+  const input = document.getElementById("aiPromptInput");
+  const exec = document.getElementById("aiExecBtn");
+  const show = input.style.display === "none";
+  input.style.display = show ? "block" : "none";
+  exec.style.display = show ? "inline-block" : "none";
+};
+
+
+// 「この内容で書く」ボタンの処理
+document.getElementById("aiExecBtn").onclick = async () => {
+  const input = document.getElementById("aiPromptInput");
+  await generateAIBlog(input.value.trim());
+};
+
+// 生成処理本体（共通関数）
+async function generateAIBlog(prompt) {
+  if (!prompt) return alert("内容を入力してください");
+
+  showLoading("AIで生成中...");
+
+  try {
+    const res = await fetch(GEMINI_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `ホットペッパービューティーのブログ記事として、以下のテーマに関する文章を生成してください（600〜800文字）:\n\n${prompt}`
+          }]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!aiText) throw new Error("生成結果が取得できませんでした");
+
+    const editor = document.querySelector('.nicEdit-main');
+    if (editor) {
+      editor.innerHTML += "<br><br>" + aiText.replace(/\n/g, "<br>");
+
+    }
+
+    alert("AI記事を挿入しました");
+  } catch (err) {
+    console.error("AI生成エラー:", err);
+    alert("AI生成に失敗しました");
+  } finally {
+    hideLoading();
+    const input = document.getElementById("aiPromptInput");
+    const exec = document.getElementById("aiExecBtn");
+    input.style.display = "none";
+    exec.style.display = "none";
+    input.value = '';
+  }
+}
+
+
+  document.getElementById("addCandidate").onclick = () => {
+    const data = getFormData();
+    showLoading("候補を登録中...");
+    fetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(data).toString()
+    }).then(() => {
+      hideLoading();
+      alert("候補に登録しました");
+      loadData();
+    });
+  };
+
+  document.getElementById("confirmSelected").onclick = () => {
+    const selected = candidateData.filter(item => document.querySelector(`input[data-index='${item.index}']`)?.checked);
+    if (selected.length === 0) return alert("選択されていません");
+    showLoading("確定リストへ送信中...");
+    fetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action: 'confirm',
+        indexList: JSON.stringify(selected.map(item => item.index))
+      }).toString()
+    }).then(() => {
+      hideLoading();
+      alert("一括確定しました");
+      loadData();
+    });
+  };
+
+  document.getElementById("deleteSelected").onclick = () => {
+    const selectedIndexes = candidateData
+      .filter(item => document.querySelector(`input[data-index='${item.index}']`)?.checked)
+      .map(item => item.index);
+
+    if (selectedIndexes.length === 0) return alert("削除対象が選択されていません");
+    showLoading("削除中...");
+    fetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action: "delete",
+        indexList: JSON.stringify(selectedIndexes)
+      }).toString()
+    }).then(() => {
+      hideLoading();
+      alert("削除しました");
+      loadData();
+    });
+  };
+
+  loadData();
+})();
